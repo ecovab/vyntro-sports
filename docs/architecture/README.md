@@ -74,7 +74,7 @@ workers, AI triggers, trending recompute) — not public.
 3. ✅ Authentication system
 4. ✅ Basic UI
 5. ✅ Live data integration
-6. AI processing layer
+6. ✅ AI processing layer
 7. Notifications
 8. Subscription system
 9. Admin dashboard
@@ -85,5 +85,12 @@ providers (football-data.org for live matches/standings, RSS feeds for news),
 normalizes their output through `@vyntro/svc-matches` / `@vyntro/svc-news`,
 and upserts into Postgres idempotently via `externalRef` uniqueness. The API
 gateway's matches/news/main-event services now read directly from Postgres
-instead of returning stubs. Phases 6–10 remain empty-but-wired skeletons,
-each marked with `Not implemented` / `TODO` at the exact integration points.
+instead of returning stubs.
+
+Phase 6 adds `@vyntro/svc-ai-orchestrator`: Claude calls are always built from
+facts already persisted in Postgres, validated against those same facts after
+the response comes back, and backed by a deterministic template fallback —
+AI is annotation-only and never load-bearing. Generated summaries are cached
+in `AiSummary` keyed by a hash of the source facts and only regenerate when
+those facts change. Phases 7–10 remain empty-but-wired skeletons, each marked
+with `Not implemented` / `TODO` at the exact integration points.
