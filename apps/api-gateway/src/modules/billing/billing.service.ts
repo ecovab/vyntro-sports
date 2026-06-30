@@ -1,8 +1,14 @@
 import { Injectable } from "@nestjs/common";
+import {
+  createCheckoutSession,
+  createPortalSession,
+  getCurrentSubscription,
+  handleSubscriptionWebhookEvent,
+} from "@vyntro/svc-billing";
+import { prisma } from "@vyntro/db";
 
 @Injectable()
 export class BillingService {
-  // Implemented in Phase 8: Stripe checkout/portal/webhook handling
   async getPlans() {
     return [
       { id: "free", name: "Free" },
@@ -11,19 +17,24 @@ export class BillingService {
     ];
   }
 
-  async createCheckoutSession(_userId: string, _plan: string) {
-    throw new Error("Not implemented");
+  async createCheckoutSession(userId: string, plan: "premium_monthly" | "premium_yearly") {
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+    if (!user) throw new Error("User not found");
+    const url = await createCheckoutSession(userId, user.email, plan);
+    return { url };
   }
 
-  async createPortalSession(_userId: string) {
-    throw new Error("Not implemented");
+  async createPortalSession(userId: string) {
+    const url = await createPortalSession(userId);
+    return { url };
   }
 
-  async handleStripeWebhook(_rawBody: Buffer, _signature: string) {
-    throw new Error("Not implemented");
+  async handleStripeWebhook(rawBody: Buffer, signature: string) {
+    await handleSubscriptionWebhookEvent(rawBody, signature);
+    return { received: true };
   }
 
-  async getCurrentSubscription(_userId: string) {
-    return null;
+  async getCurrentSubscription(userId: string) {
+    return getCurrentSubscription(userId);
   }
 }

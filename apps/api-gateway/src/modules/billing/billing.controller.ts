@@ -1,4 +1,6 @@
-import { Body, Controller, Get, Headers, Post, Req } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Get, Headers, Post, Req } from "@nestjs/common";
+import type { RawBodyRequest } from "@nestjs/common";
+import type { Request } from "express";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { Public } from "../../common/decorators/public.decorator";
 import type { AuthenticatedUser } from "../../common/guards/jwt-auth.guard";
@@ -20,7 +22,10 @@ export class BillingController {
   }
 
   @Post("checkout-session")
-  checkout(@CurrentUser() user: AuthenticatedUser, @Body() body: { plan: string }) {
+  checkout(@CurrentUser() user: AuthenticatedUser, @Body() body: { plan: "premium_monthly" | "premium_yearly" }) {
+    if (body.plan !== "premium_monthly" && body.plan !== "premium_yearly") {
+      throw new BadRequestException("plan must be premium_monthly or premium_yearly");
+    }
     return this.billingService.createCheckoutSession(user.id, body.plan);
   }
 
@@ -31,7 +36,8 @@ export class BillingController {
 
   @Public()
   @Post("webhooks/stripe")
-  webhook(@Req() req: { rawBody: Buffer }, @Headers("stripe-signature") signature: string) {
+  webhook(@Req() req: RawBodyRequest<Request>, @Headers("stripe-signature") signature: string) {
+    if (!req.rawBody) throw new BadRequestException("Missing raw request body");
     return this.billingService.handleStripeWebhook(req.rawBody, signature);
   }
 }

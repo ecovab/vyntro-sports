@@ -76,7 +76,7 @@ workers, AI triggers, trending recompute) — not public.
 5. ✅ Live data integration
 6. ✅ AI processing layer
 7. ✅ Notifications
-8. Subscription system
+8. ✅ Subscription system
 9. Admin dashboard
 10. Optimization + deployment
 
@@ -107,5 +107,19 @@ transitions (using a pre-upsert `previousStatus` lookup to avoid duplicate
 triggers on repeated polls), and `ingestion-news` enqueues `news.breaking` for
 each newly ingested article. The API gateway's `notifications` module now
 reads/writes real Prisma rows for list/markRead/preferences/device
-registration. Phases 8–10 remain empty-but-wired skeletons, each marked
-with `Not implemented` / `TODO` at the exact integration points.
+registration.
+
+Phase 8 implements `@vyntro/svc-billing` against the real Stripe SDK:
+`createCheckoutSession` lazily creates (and persists) a Stripe customer per
+user, then opens a subscription-mode Checkout session for the
+`premium_monthly`/`premium_yearly` price configured in `.env`;
+`createPortalSession` opens the Billing Portal for self-service plan
+changes/cancellation. `handleSubscriptionWebhookEvent` is the only writer of
+`Subscription`/`Invoice` state — it verifies the Stripe signature against
+`STRIPE_WEBHOOK_SECRET` before processing `checkout.session.completed`,
+`customer.subscription.{created,updated,deleted}`, and `invoice.{paid,payment_failed}`,
+so plan/status changes are never trusted from client input. The API gateway
+enables `rawBody` capture in `main.ts` specifically so the webhook route can
+verify the raw, unparsed payload. Phases 9–10 remain empty-but-wired
+skeletons, each marked with `Not implemented` / `TODO` at the exact
+integration points.
