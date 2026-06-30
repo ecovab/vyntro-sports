@@ -1,0 +1,9 @@
+{
+  "expo": {
+    "name": "Vyntro Sports",
+    "slug": "vyntro-sports",
+    "scheme": "vyntro",
+    "userInterfaceStyle": "dark",
+    "platforms": ["ios", "android"]
+  }
+}
