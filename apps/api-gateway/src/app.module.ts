@@ -10,11 +10,13 @@ import { NotificationsModule } from "./modules/notifications/notifications.modul
 import { FavoritesModule } from "./modules/favorites/favorites.module";
 import { SearchModule } from "./modules/search/search.module";
 import { AdminModule } from "./modules/admin/admin.module";
+import { HealthModule } from "./modules/health/health.module";
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
+    HealthModule,
     AuthModule,
     MatchesModule,
     NewsModule,

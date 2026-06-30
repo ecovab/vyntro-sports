@@ -22,6 +22,7 @@
     "@vyntro/types": "*",
     "@vyntro/config": "*",
     "@vyntro/svc-billing": "*",
+    "@vyntro/cache": "*",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.0",
     "bcryptjs": "^2.4.3",

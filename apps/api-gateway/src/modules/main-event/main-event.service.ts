@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { prisma } from "@vyntro/db";
+import { cacheWrap } from "@vyntro/cache";
 
 @Injectable()
 export class MainEventService {
@@ -8,8 +9,16 @@ export class MainEventService {
    * A dedicated trending-scorer worker (Phase 7) will replace this with a
    * real engagement-weighted score; until then this is a deterministic,
    * verifiable placeholder — never a fabricated or guessed match.
+   *
+   * Cached for 5s: this is the most-polled read in the app (every client's
+   * hero), so a short cache-aside window meaningfully cuts DB load without
+   * making the hero noticeably stale.
    */
   async getCurrent() {
+    return cacheWrap("main-event:current", 5, () => this.computeCurrent());
+  }
+
+  private async computeCurrent() {
     const liveMatch = await prisma.match.findFirst({
       where: { status: "live" },
       include: { sport: true, competition: true, homeTeam: true, awayTeam: true },

@@ -1,9 +1,15 @@
 import { Injectable } from "@nestjs/common";
 import { prisma, type MatchStatus } from "@vyntro/db";
+import { cacheWrap } from "@vyntro/cache";
 
 @Injectable()
 export class MatchesService {
   async listMatches(filters: { sport?: string; competition?: string; status?: string; date?: string }) {
+    const cacheKey = `matches:list:${JSON.stringify(filters)}`;
+    return cacheWrap(cacheKey, 10, () => this.queryMatches(filters));
+  }
+
+  private async queryMatches(filters: { sport?: string; competition?: string; status?: string; date?: string }) {
     const where: Record<string, unknown> = {};
     if (filters.sport) where.sport = { slug: filters.sport };
     if (filters.competition) where.competitionId = filters.competition;

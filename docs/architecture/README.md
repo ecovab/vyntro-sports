@@ -78,7 +78,7 @@ workers, AI triggers, trending recompute) — not public.
 7. ✅ Notifications
 8. ✅ Subscription system
 9. ✅ Admin dashboard
-10. Optimization + deployment
+10. ✅ Optimization + deployment
 
 Phase 5 wires the `ingestion-sports` and `ingestion-news` workers to real
 providers (football-data.org for live matches/standings, RSS feeds for news),
@@ -132,6 +132,22 @@ reviewable. `apps/admin` (Next.js) is a real dashboard against this API —
 its own zustand-persisted session store, an admin-only login gate that
 rejects non-`admin` roles client-side (the server-side `RolesGuard` is the
 actual enforcement boundary), and pages for the overview stats, user table,
-subscriptions table, and feature-flag toggles. Phase 10 remains an
-empty-but-wired skeleton, marked with `Not implemented` / `TODO` at the
-exact integration points.
+subscriptions table, and feature-flag toggles.
+
+Phase 10 enables the rate limiter that had been registered but never
+enforced: `ThrottlerGuard` now runs as a global `APP_GUARD` alongside
+`JwtAuthGuard`/`RolesGuard`. A new `@vyntro/cache` package wraps `ioredis`
+in a `cacheWrap`/`cacheInvalidate` cache-aside helper, used only in front of
+the two hottest read paths — `MainEventService.getCurrent` (5s TTL) and
+`MatchesService.listMatches` (10s TTL, keyed by filters) — Postgres remains
+the source of truth and these caches are a latency optimization only. A
+public, throttle-exempt `/health` endpoint runs `SELECT 1` against Postgres
+for load-balancer probes. Deployment is real multi-stage Docker builds:
+`Dockerfile.api-gateway` (dedicated), `Dockerfile.worker` and
+`Dockerfile.web` (generic, parameterized by build args) cover every
+deployable unit, wired together in `infra/docker/docker-compose.yml`
+alongside Postgres/Redis with healthchecks. `.github/workflows/ci.yml` runs
+the full pipeline (install, `prisma generate`, `prisma db push`, lint,
+typecheck, build, test) against real Postgres/Redis service containers.
+`SENTRY_DSN` is scaffolded in `.env.example` only — not yet wired into
+code, marked as an explicit boundary rather than half-implemented.

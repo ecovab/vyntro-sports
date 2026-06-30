@@ -17,7 +17,8 @@
       "@vyntro/db": ["packages/db/src/index.ts"],
       "@vyntro/ui": ["packages/ui/src/index.ts"],
       "@vyntro/config": ["packages/config/src/index.ts"],
-      "@vyntro/sdk": ["packages/sdk/src/index.ts"]
+      "@vyntro/sdk": ["packages/sdk/src/index.ts"],
+      "@vyntro/cache": ["packages/cache/src/index.ts"]
     }
   }
 }

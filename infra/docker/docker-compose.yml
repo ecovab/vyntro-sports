@@ -11,11 +11,135 @@ services:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api-gateway:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.api-gateway
+    env_file: ../../.env
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/vyntro
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  ingestion-sports:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.worker
+      args:
+        PACKAGE_NAME: "@vyntro/worker-ingestion-sports"
+        APP_DIR: "workers/ingestion-sports"
+    env_file: ../../.env
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/vyntro
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  ingestion-news:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.worker
+      args:
+        PACKAGE_NAME: "@vyntro/worker-ingestion-news"
+        APP_DIR: "workers/ingestion-news"
+    env_file: ../../.env
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/vyntro
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  notification-dispatcher:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.worker
+      args:
+        PACKAGE_NAME: "@vyntro/worker-notification-dispatcher"
+        APP_DIR: "workers/notification-dispatcher"
+    env_file: ../../.env
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/vyntro
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  trending-scorer:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.worker
+      args:
+        PACKAGE_NAME: "@vyntro/worker-trending-scorer"
+        APP_DIR: "workers/trending-scorer"
+    env_file: ../../.env
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/vyntro
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.web
+      args:
+        PACKAGE_NAME: "@vyntro/web"
+        APP_DIR: "apps/web"
+        PORT: "3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api-gateway
+
+  admin:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.web
+      args:
+        PACKAGE_NAME: "@vyntro/admin"
+        APP_DIR: "apps/admin"
+        PORT: "4100"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+    ports:
+      - "4100:4100"
+    depends_on:
+      - api-gateway
 
 volumes:
   postgres-data:
