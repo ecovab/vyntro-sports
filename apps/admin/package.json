@@ -1,0 +1,26 @@
+{
+  "name": "@vyntro/admin",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "next build",
+    "dev": "next dev -p 4100",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "^14.2.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "@vyntro/ui": "*",
+    "@vyntro/types": "*",
+    "@vyntro/sdk": "*",
+    "zustand": "^5.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "@types/react": "^18.3.0",
+    "@types/node": "^20.0.0"
+  }
+}

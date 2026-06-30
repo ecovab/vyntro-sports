@@ -1,0 +1,21 @@
+{
+  "name": "@vyntro/worker-trending-scorer",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "bullmq": "^5.21.0",
+    "@vyntro/svc-trending": "*",
+    "@vyntro/db": "*",
+    "@vyntro/cache": "*"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

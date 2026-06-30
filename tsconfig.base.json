@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": false,
+    "isolatedModules": true,
+    "baseUrl": ".",
+    "paths": {
+      "@vyntro/types": ["packages/types/src/index.ts"],
+      "@vyntro/db": ["packages/db/src/index.ts"],
+      "@vyntro/ui": ["packages/ui/src/index.ts"],
+      "@vyntro/config": ["packages/config/src/index.ts"],
+      "@vyntro/sdk": ["packages/sdk/src/index.ts"],
+      "@vyntro/cache": ["packages/cache/src/index.ts"],
+      "@vyntro/email": ["packages/email/src/index.ts"]
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "vyntro-sports",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "services/*",
+    "workers/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0",
+    "typescript": "^5.6.0"
+  },
+  "packageManager": "npm@10.9.7",
+  "engines": {
+    "node": ">=20"
+  }
+}
