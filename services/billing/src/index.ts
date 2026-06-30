@@ -165,6 +165,7 @@ export async function handleSubscriptionWebhookEvent(rawBody: Buffer, signature:
         id: string;
         amount_paid: number;
         currency: string;
+        created: number;
       };
       const existing: SubscriptionRow | null = await prisma.subscription.findFirst({
         where: { stripeCustomerId: invoice.customer },
@@ -177,6 +178,8 @@ export async function handleSubscriptionWebhookEvent(rawBody: Buffer, signature:
             stripeInvoiceId: invoice.id,
             amount: invoice.amount_paid,
             currency: invoice.currency,
+            status: event.type === "invoice.paid" ? "paid" : "payment_failed",
+            issuedAt: new Date(invoice.created * 1000),
           },
         });
       }

@@ -36,7 +36,7 @@ export class AdminService {
     });
 
     await prisma.adminAuditLog.create({
-      data: { adminId, action: "user.update", targetType: "user", targetId: id, metadata: patch },
+      data: { adminId, action: "user.update", targetType: "user", targetId: id, metadata: { ...patch } },
     });
 
     return user;
