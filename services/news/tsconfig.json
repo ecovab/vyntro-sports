@@ -4,8 +4,9 @@
     "module": "CommonJS",
     "moduleResolution": "Node",
     "outDir": "dist",
-    "rootDir": "src",
     "declaration": true
   },
-  "include": ["src"]
+  "include": [
+    "src"
+  ]
 }

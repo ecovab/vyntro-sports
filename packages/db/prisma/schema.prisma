@@ -30,6 +30,7 @@ model User {
   oauthAccounts   OAuthAccount[]
   sessions        Session[]
   passwordResets  PasswordReset[]
+  emailVerificationTokens EmailVerificationToken[]
   subscriptions   Subscription[]
   favorites       Favorite[]
   notifications   Notification[]
@@ -76,6 +77,18 @@ model PasswordReset {
   createdAt DateTime  @default(now())
 
   @@map("password_resets")
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  tokenHash String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@map("email_verification_tokens")
 }
 
 // ---------- Billing ----------

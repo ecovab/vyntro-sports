@@ -1,4 +1,6 @@
 import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
+import { CurrentUser } from "../../common/decorators/current-user.decorator";
+import type { AuthenticatedUser } from "../../common/guards/jwt-auth.guard";
 import { NotificationsService } from "./notifications.service";
 
 @Controller()
@@ -6,27 +8,27 @@ export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @Get("notifications")
-  list() {
-    return this.notificationsService.list("TODO");
+  list(@CurrentUser() user: AuthenticatedUser) {
+    return this.notificationsService.list(user.id);
   }
 
   @Patch("notifications/:id/read")
-  markRead(@Param("id") id: string) {
-    return this.notificationsService.markRead("TODO", id);
+  markRead(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
+    return this.notificationsService.markRead(user.id, id);
   }
 
   @Get("notification-preferences")
-  getPreferences() {
-    return this.notificationsService.getPreferences("TODO");
+  getPreferences(@CurrentUser() user: AuthenticatedUser) {
+    return this.notificationsService.getPreferences(user.id);
   }
 
   @Patch("notification-preferences")
-  updatePreferences(@Body() body: unknown) {
-    return this.notificationsService.updatePreferences("TODO", body);
+  updatePreferences(@CurrentUser() user: AuthenticatedUser, @Body() body: unknown) {
+    return this.notificationsService.updatePreferences(user.id, body);
   }
 
   @Post("devices")
-  registerDevice(@Body() body: { token: string; platform: "ios" | "android" | "web" }) {
-    return this.notificationsService.registerDevice("TODO", body.token, body.platform);
+  registerDevice(@CurrentUser() user: AuthenticatedUser, @Body() body: { token: string; platform: "ios" | "android" | "web" }) {
+    return this.notificationsService.registerDevice(user.id, body.token, body.platform);
   }
 }
