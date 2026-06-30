@@ -13,7 +13,8 @@
     "@vyntro/svc-matches": "*",
     "@vyntro/svc-ai-orchestrator": "*",
     "@vyntro/svc-notifications": "*",
-    "@vyntro/db": "*"
+    "@vyntro/db": "*",
+    "@vyntro/cache": "*"
   },
   "devDependencies": {
     "tsx": "^4.19.0",

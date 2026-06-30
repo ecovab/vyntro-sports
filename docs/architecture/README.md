@@ -151,3 +151,32 @@ the full pipeline (install, `prisma generate`, `prisma db push`, lint,
 typecheck, build, test) against real Postgres/Redis service containers.
 `SENTRY_DSN` is scaffolded in `.env.example` only — not yet wired into
 code, marked as an explicit boundary rather than half-implemented.
+
+## Hardening pass: real integrations everywhere
+
+A follow-up pass replaced every remaining placeholder with a working
+integration:
+
+- **MAIN EVENT scoring is real.** `workers/trending-scorer` no longer
+  throws `Not implemented` — every 15s it scores all live matches via
+  `computeImportanceScore` (`@vyntro/svc-trending`, now backed by real
+  competition tier weight, live goal/card event counts, and 24h news
+  volume per sport), persists the winner to `MainEvent`, pre-warms the
+  `main-event:current` Redis cache, and publishes on
+  `main_event.changed`. `MainEventService.getCurrent` now only reads and
+  hydrates that persisted decision — it no longer runs its own weaker
+  selection logic.
+- **Live WebSocket push is real.** A `LiveGateway` (`/ws` namespace,
+  `apps/api-gateway/src/modules/ws`) subscribes to the
+  `main_event.changed` and `match.updated` Redis channels and relays them
+  to connected clients. `workers/ingestion-sports` publishes
+  `match.updated` (id/status/scores) on every poll, satisfying the
+  documented "WebSocket namespace for live score/event/main-event push."
+- **Apple Sign-In is real.** `AuthService.loginWithApple` verifies the ID
+  token's signature against Apple's published JWKS
+  (`https://appleid.apple.com/auth/keys`, via `jose`) and validates
+  issuer/audience — it no longer decodes the JWT payload unverified.
+- **Transactional email is real.** A new `@vyntro/email` package wraps the
+  Resend SDK (`RESEND_API_KEY`/`EMAIL_FROM` in `.env.example`).
+  `forgotPassword` and email verification now send real emails instead of
+  logging tokens to the console.

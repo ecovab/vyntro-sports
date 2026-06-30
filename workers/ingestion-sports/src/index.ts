@@ -2,8 +2,11 @@ import { Queue, Worker } from "bullmq";
 import { getAdapter, ingestNormalizedMatches } from "@vyntro/svc-matches";
 import { getOrGenerateMatchSummary } from "@vyntro/svc-ai-orchestrator";
 import { enqueueNotificationEvent } from "@vyntro/svc-notifications";
+import { publish } from "@vyntro/cache";
 import { prisma } from "@vyntro/db";
 import type { Sport } from "@vyntro/types";
+
+const MATCH_UPDATED_CHANNEL = "match.updated";
 
 const connection = { url: process.env.REDIS_URL ?? "redis://localhost:6379" };
 const ACTIVE_SPORTS: Sport[] = ["football"];
@@ -88,13 +91,21 @@ const worker = new Worker<IngestLiveMatchesJob>(
 
     const sportRow = await prisma.sport.findUnique({ where: { slug: job.data.sport } });
     if (sportRow) {
-      await Promise.allSettled(
-        result.matches.map((m) =>
+      await Promise.allSettled([
+        ...result.matches.map((m) =>
           handleMatchTransition(sportRow.id, m).catch((err) =>
             console.error(`[ingestion-sports] transition handling failed for match ${m.id}`, err),
           ),
         ),
-      );
+        ...result.matches.map((m) =>
+          publish(MATCH_UPDATED_CHANNEL, {
+            matchId: m.id,
+            status: m.status,
+            homeScore: m.homeScore,
+            awayScore: m.awayScore,
+          }).catch((err) => console.error(`[ingestion-sports] publish failed for match ${m.id}`, err)),
+        ),
+      ]);
     }
 
     return result;

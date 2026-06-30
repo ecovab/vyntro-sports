@@ -57,10 +57,25 @@ async function upsertTeam(sportId: string, team: NormalizedTeam) {
  */
 export async function ingestNormalizedMatches(sport: Sport, matches: NormalizedMatch[]) {
   if (matches.length === 0)
-    return { ingested: 0, matches: [] as Array<{ id: string; status: string; previousStatus: string | null }> };
+    return {
+      ingested: 0,
+      matches: [] as Array<{
+        id: string;
+        status: string;
+        previousStatus: string | null;
+        homeScore: number | null;
+        awayScore: number | null;
+      }>,
+    };
 
   const sportRow = await upsertSport(sport);
-  const persisted: Array<{ id: string; status: string; previousStatus: string | null }> = [];
+  const persisted: Array<{
+    id: string;
+    status: string;
+    previousStatus: string | null;
+    homeScore: number | null;
+    awayScore: number | null;
+  }> = [];
 
   for (const match of matches) {
     const [competition, homeTeam, awayTeam] = await Promise.all([
@@ -105,7 +120,13 @@ export async function ingestNormalizedMatches(sport: Sport, matches: NormalizedM
         rawProviderPayload: match.raw as object | undefined,
       },
     });
-    persisted.push({ id: row.id, status: row.status, previousStatus: existing?.status ?? null });
+    persisted.push({
+      id: row.id,
+      status: row.status,
+      previousStatus: existing?.status ?? null,
+      homeScore: row.homeScore,
+      awayScore: row.awayScore,
+    });
   }
 
   return { ingested: matches.length, matches: persisted };

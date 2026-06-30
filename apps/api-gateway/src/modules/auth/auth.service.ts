@@ -2,8 +2,13 @@ import { ConflictException, Injectable, UnauthorizedException } from "@nestjs/co
 import { JwtService } from "@nestjs/jwt";
 import { OAuth2Client } from "google-auth-library";
 import * as bcrypt from "bcryptjs";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 import { prisma, type User } from "@vyntro/db";
+import { sendPasswordResetEmail, sendVerificationEmail } from "@vyntro/email";
 import { generateOpaqueToken, hashOpaqueToken } from "./token.util";
+
+const APPLE_JWKS = createRemoteJWKSet(new URL("https://appleid.apple.com/auth/keys"));
+const WEB_APP_URL = process.env.WEB_APP_URL ?? "http://localhost:3000";
 
 const ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
 const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
@@ -33,7 +38,7 @@ export class AuthService {
       data: { email, passwordHash, displayName },
     });
 
-    await this.createEmailVerificationToken(user.id);
+    await this.createEmailVerificationToken(user.id, user.email);
     const tokens = await this.issueTokenPair(user);
     return { user: toPublicUser(user), tokens };
   }
@@ -99,7 +104,7 @@ export class AuthService {
     if (!user || user.emailVerifiedAt) {
       return; // do not leak account existence/verification state
     }
-    await this.createEmailVerificationToken(user.id);
+    await this.createEmailVerificationToken(user.id, user.email);
   }
 
   async forgotPassword(email: string): Promise<void> {
@@ -116,9 +121,9 @@ export class AuthService {
         expiresAt: new Date(Date.now() + PASSWORD_RESET_TTL_MS),
       },
     });
-    // TODO(Phase 7-adjacent): send via transactional email provider (e.g. Resend/SES)
-    // instead of console output once that integration exists.
-    console.log(`[auth] password reset token for ${email}: ${token}`);
+    await sendPasswordResetEmail(email, `${WEB_APP_URL}/reset-password?token=${token}`).catch((err) =>
+      console.error(`[auth] failed to send password reset email to ${email}`, err),
+    );
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {
@@ -155,15 +160,19 @@ export class AuthService {
   }
 
   async loginWithApple(idToken: string, displayName?: string): Promise<{ user: PublicUser; tokens: TokenPair }> {
-    // TODO(Phase 3 follow-up): verify the JWT signature against Apple's published
-    // JWKS (https://appleid.apple.com/auth/keys) before trusting the payload.
-    // Decoding without signature verification is a placeholder, not production-safe.
-    const payload = decodeJwtPayloadUnsafe(idToken);
-    if (!payload?.email || !payload.sub) {
+    const { payload } = await jwtVerify(idToken, APPLE_JWKS, {
+      issuer: "https://appleid.apple.com",
+      audience: process.env.APPLE_CLIENT_ID,
+    }).catch(() => {
+      throw new UnauthorizedException("Invalid Apple token");
+    });
+
+    const email = typeof payload.email === "string" ? payload.email : undefined;
+    if (!email || !payload.sub) {
       throw new UnauthorizedException("Invalid Apple token");
     }
 
-    const user = await this.findOrCreateOAuthUser("apple", payload.sub, payload.email, displayName);
+    const user = await this.findOrCreateOAuthUser("apple", payload.sub, email, displayName);
     const tokens = await this.issueTokenPair(user);
     return { user: toPublicUser(user), tokens };
   }
@@ -200,7 +209,7 @@ export class AuthService {
     });
   }
 
-  private async createEmailVerificationToken(userId: string): Promise<string> {
+  private async createEmailVerificationToken(userId: string, email: string): Promise<string> {
     const token = generateOpaqueToken();
     await prisma.emailVerificationToken.create({
       data: {
@@ -209,8 +218,9 @@ export class AuthService {
         expiresAt: new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS),
       },
     });
-    // TODO(Phase 7-adjacent): send via transactional email provider instead of logging.
-    console.log(`[auth] email verification token for user ${userId}: ${token}`);
+    await sendVerificationEmail(email, `${WEB_APP_URL}/verify-email?token=${token}`).catch((err) =>
+      console.error(`[auth] failed to send verification email to ${email}`, err),
+    );
     return token;
   }
 
@@ -253,16 +263,4 @@ function toPublicUser(user: User): PublicUser {
     role: user.role,
     emailVerified: user.emailVerifiedAt !== null,
   };
-}
-
-function decodeJwtPayloadUnsafe(token: string): { email?: string; sub?: string } | null {
-  const segments = token.split(".");
-  if (segments.length !== 3) {
-    return null;
-  }
-  try {
-    return JSON.parse(Buffer.from(segments[1], "base64url").toString("utf8"));
-  } catch {
-    return null;
-  }
 }
