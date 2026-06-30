@@ -1,5 +1,7 @@
 import { Body, Controller, Get, Param, Patch } from "@nestjs/common";
+import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { Roles } from "../../common/decorators/roles.decorator";
+import type { AuthenticatedUser } from "../../common/guards/jwt-auth.guard";
 import { AdminService } from "./admin.service";
 
 @Roles("admin")
@@ -13,8 +15,8 @@ export class AdminController {
   }
 
   @Patch("users/:id")
-  updateUser(@Param("id") id: string, @Body() patch: unknown) {
-    return this.adminService.updateUser(id, patch);
+  updateUser(@CurrentUser() admin: AuthenticatedUser, @Param("id") id: string, @Body() patch: unknown) {
+    return this.adminService.updateUser(admin.id, id, patch as Parameters<AdminService["updateUser"]>[2]);
   }
 
   @Get("subscriptions")
@@ -38,7 +40,11 @@ export class AdminController {
   }
 
   @Patch("feature-flags/:key")
-  updateFeatureFlag(@Param("key") key: string, @Body() body: { enabled: boolean }) {
-    return this.adminService.updateFeatureFlag(key, body.enabled);
+  updateFeatureFlag(
+    @CurrentUser() admin: AuthenticatedUser,
+    @Param("key") key: string,
+    @Body() body: { enabled: boolean },
+  ) {
+    return this.adminService.updateFeatureFlag(admin.id, key, body.enabled);
   }
 }

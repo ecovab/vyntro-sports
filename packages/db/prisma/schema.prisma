@@ -37,6 +37,7 @@ model User {
   notificationPrefs NotificationPreference[]
   devices         Device[]
   analyticsEvents AnalyticsEvent[]
+  adminAuditLogs  AdminAuditLog[]
 
   @@map("users")
 }
@@ -418,4 +419,27 @@ model AnalyticsEvent {
   occurredAt DateTime @default(now())
 
   @@map("analytics_events")
+}
+
+// ---------- Admin ----------
+
+model FeatureFlag {
+  key       String   @id
+  enabled   Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+
+  @@map("feature_flags")
+}
+
+model AdminAuditLog {
+  id         String   @id @default(uuid())
+  adminId    String
+  admin      User     @relation(fields: [adminId], references: [id])
+  action     String
+  targetType String?
+  targetId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@map("admin_audit_logs")
 }

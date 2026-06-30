@@ -77,7 +77,7 @@ workers, AI triggers, trending recompute) — not public.
 6. ✅ AI processing layer
 7. ✅ Notifications
 8. ✅ Subscription system
-9. Admin dashboard
+9. ✅ Admin dashboard
 10. Optimization + deployment
 
 Phase 5 wires the `ingestion-sports` and `ingestion-news` workers to real
@@ -120,6 +120,18 @@ changes/cancellation. `handleSubscriptionWebhookEvent` is the only writer of
 `customer.subscription.{created,updated,deleted}`, and `invoice.{paid,payment_failed}`,
 so plan/status changes are never trusted from client input. The API gateway
 enables `rawBody` capture in `main.ts` specifically so the webhook route can
-verify the raw, unparsed payload. Phases 9–10 remain empty-but-wired
-skeletons, each marked with `Not implemented` / `TODO` at the exact
-integration points.
+verify the raw, unparsed payload.
+
+Phase 9 implements the real `AdminController`/`AdminService` (RBAC-gated by
+`@Roles("admin")`) backed by Prisma: user list/role-and-status edits,
+subscription listing, an analytics summary (user/premium/live-match/article
+counts), and a `FeatureFlag` model with upsert-on-write semantics. Every
+mutating admin action (`user.update`, `feature-flag.update`) writes an
+`AdminAuditLog` row capturing who changed what, so admin actions are
+reviewable. `apps/admin` (Next.js) is a real dashboard against this API —
+its own zustand-persisted session store, an admin-only login gate that
+rejects non-`admin` roles client-side (the server-side `RolesGuard` is the
+actual enforcement boundary), and pages for the overview stats, user table,
+subscriptions table, and feature-flag toggles. Phase 10 remains an
+empty-but-wired skeleton, marked with `Not implemented` / `TODO` at the
+exact integration points.

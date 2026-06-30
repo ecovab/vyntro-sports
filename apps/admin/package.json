@@ -15,7 +15,8 @@
     "react-dom": "^18.3.0",
     "@vyntro/ui": "*",
     "@vyntro/types": "*",
-    "@vyntro/sdk": "*"
+    "@vyntro/sdk": "*",
+    "zustand": "^5.0.0"
   },
   "devDependencies": {
     "typescript": "^5.6.0",
