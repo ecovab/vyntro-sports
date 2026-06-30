@@ -3,6 +3,7 @@ import Parser from "rss-parser";
 import { prisma } from "@vyntro/db";
 import { deduplicateArticles, ingestNewsArticles, rankByImportance, type RawArticle } from "@vyntro/svc-news";
 import { getOrGenerateArticleSummary } from "@vyntro/svc-ai-orchestrator";
+import { enqueueNotificationEvent } from "@vyntro/svc-notifications";
 
 const connection = { url: process.env.REDIS_URL ?? "redis://localhost:6379" };
 const POLL_INTERVAL_MS = 60_000;
@@ -46,11 +47,23 @@ const worker = new Worker(
     const result = await ingestNewsArticles(ranked);
 
     await Promise.allSettled(
-      result.articles.map((article) =>
-        getOrGenerateArticleSummary(article.id, article.title, article.content ?? "").catch((err) =>
-          console.error(`[ingestion-news] summary generation failed for article ${article.id}`, err),
-        ),
-      ),
+      result.articles.map(async (article) => {
+        const summary = await getOrGenerateArticleSummary(article.id, article.title, article.content ?? "").catch(
+          (err) => {
+            console.error(`[ingestion-news] summary generation failed for article ${article.id}`, err);
+            return null;
+          },
+        );
+
+        await enqueueNotificationEvent({
+          eventType: "news.breaking",
+          sportId: article.sportId,
+          subjectType: "article",
+          subjectId: article.id,
+          title: article.title,
+          body: summary?.summaryText ?? article.title,
+        });
+      }),
     );
 
     return { ingested: result.ingested };

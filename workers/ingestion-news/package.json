@@ -12,6 +12,7 @@
     "@vyntro/db": "*",
     "@vyntro/svc-news": "*",
     "@vyntro/svc-ai-orchestrator": "*",
+    "@vyntro/svc-notifications": "*",
     "bullmq": "^5.21.0",
     "rss-parser": "^3.13.0"
   },

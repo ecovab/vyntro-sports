@@ -23,7 +23,10 @@ export class NotificationsController {
   }
 
   @Patch("notification-preferences")
-  updatePreferences(@CurrentUser() user: AuthenticatedUser, @Body() body: unknown) {
+  updatePreferences(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: { sportId?: string; eventType: string; channel: string; enabled: boolean }[],
+  ) {
     return this.notificationsService.updatePreferences(user.id, body);
   }
 

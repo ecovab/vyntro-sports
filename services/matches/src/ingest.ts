@@ -56,10 +56,11 @@ async function upsertTeam(sportId: string, team: NormalizedTeam) {
  * Never invents scores or status — only persists exactly what the adapter returned.
  */
 export async function ingestNormalizedMatches(sport: Sport, matches: NormalizedMatch[]) {
-  if (matches.length === 0) return { ingested: 0, matches: [] as Array<{ id: string; status: string }> };
+  if (matches.length === 0)
+    return { ingested: 0, matches: [] as Array<{ id: string; status: string; previousStatus: string | null }> };
 
   const sportRow = await upsertSport(sport);
-  const persisted: Array<{ id: string; status: string }> = [];
+  const persisted: Array<{ id: string; status: string; previousStatus: string | null }> = [];
 
   for (const match of matches) {
     const [competition, homeTeam, awayTeam] = await Promise.all([
@@ -67,6 +68,11 @@ export async function ingestNormalizedMatches(sport: Sport, matches: NormalizedM
       upsertTeam(sportRow.id, match.homeTeam),
       upsertTeam(sportRow.id, match.awayTeam),
     ]);
+
+    const existing = await prisma.match.findUnique({
+      where: { sportId_externalRef: { sportId: sportRow.id, externalRef: match.externalRef } },
+      select: { status: true },
+    });
 
     const row = await prisma.match.upsert({
       where: { sportId_externalRef: { sportId: sportRow.id, externalRef: match.externalRef } },
@@ -99,7 +105,7 @@ export async function ingestNormalizedMatches(sport: Sport, matches: NormalizedM
         rawProviderPayload: match.raw as object | undefined,
       },
     });
-    persisted.push({ id: row.id, status: row.status });
+    persisted.push({ id: row.id, status: row.status, previousStatus: existing?.status ?? null });
   }
 
   return { ingested: matches.length, matches: persisted };

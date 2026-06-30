@@ -75,7 +75,7 @@ workers, AI triggers, trending recompute) — not public.
 4. ✅ Basic UI
 5. ✅ Live data integration
 6. ✅ AI processing layer
-7. Notifications
+7. ✅ Notifications
 8. Subscription system
 9. Admin dashboard
 10. Optimization + deployment
@@ -92,5 +92,20 @@ facts already persisted in Postgres, validated against those same facts after
 the response comes back, and backed by a deterministic template fallback —
 AI is annotation-only and never load-bearing. Generated summaries are cached
 in `AiSummary` keyed by a hash of the source facts and only regenerate when
-those facts change. Phases 7–10 remain empty-but-wired skeletons, each marked
+those facts change.
+
+Phase 7 adds the `Device` model and a `NotificationPreference` per
+user/sport/eventType/channel (sport `""` is the "all sports" sentinel, kept
+non-null so the unique constraint stays usable for upserts). `@vyntro/svc-notifications`
+provides FCM (legacy HTTP API) and raw APNs (HTTP/2 + ES256 provider JWT, no
+third-party library) senders behind `dispatchPush`, plus `enqueueNotificationEvent`
+(BullMQ producer) and `notifyUsersForEvent` (fan-out to subject favorites and
+sport followers, gated by preferences, always recorded in `Notification`
+regardless of push outcome). The `notification-dispatcher` worker consumes the
+queue; `ingestion-sports` enqueues `match.kickoff`/`match.finished` on status
+transitions (using a pre-upsert `previousStatus` lookup to avoid duplicate
+triggers on repeated polls), and `ingestion-news` enqueues `news.breaking` for
+each newly ingested article. The API gateway's `notifications` module now
+reads/writes real Prisma rows for list/markRead/preferences/device
+registration. Phases 8–10 remain empty-but-wired skeletons, each marked
 with `Not implemented` / `TODO` at the exact integration points.
