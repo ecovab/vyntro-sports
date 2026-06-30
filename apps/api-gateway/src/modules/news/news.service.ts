@@ -1,17 +1,38 @@
 import { Injectable } from "@nestjs/common";
+import { prisma } from "@vyntro/db";
+
+const PAGE_SIZE = 20;
+const BREAKING_WINDOW_MS = 6 * 60 * 60 * 1000;
 
 @Injectable()
 export class NewsService {
-  // Implemented in Phase 5: reads deduped/ranked articles populated by news ingestion worker
-  async list(_filters: { sport?: string; category?: string; page?: number }) {
-    return [];
+  async list(filters: { sport?: string; category?: string; page?: number }) {
+    const page = filters.page && filters.page > 0 ? filters.page : 1;
+    const where: Record<string, unknown> = {};
+    if (filters.sport) {
+      const sport = await prisma.sport.findUnique({ where: { slug: filters.sport } });
+      where.sportId = sport?.id ?? "__no_match__";
+    }
+
+    return prisma.newsArticle.findMany({
+      where,
+      include: { source: true },
+      orderBy: { publishedAt: "desc" },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+    });
   }
 
-  async getById(_id: string) {
-    return null;
+  async getById(id: string) {
+    return prisma.newsArticle.findUnique({ where: { id }, include: { source: true } });
   }
 
   async breaking() {
-    return [];
+    return prisma.newsArticle.findMany({
+      where: { publishedAt: { gte: new Date(Date.now() - BREAKING_WINDOW_MS) } },
+      include: { source: true },
+      orderBy: { publishedAt: "desc" },
+      take: 10,
+    });
   }
 }

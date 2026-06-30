@@ -71,15 +71,19 @@ workers, AI triggers, trending recompute) — not public.
 
 1. ✅ Architecture + tech stack + folder structure
 2. ✅ Database schema
-3. Authentication system
-4. Basic UI
-5. Live data integration
+3. ✅ Authentication system
+4. ✅ Basic UI
+5. ✅ Live data integration
 6. AI processing layer
 7. Notifications
 8. Subscription system
 9. Admin dashboard
 10. Optimization + deployment
 
-This scaffold (commit introducing this doc) completes phases 1–2 and lays
-empty-but-wired module/service/worker skeletons for phases 3–9, each marked
-with `Not implemented` / `TODO` at the exact integration points.
+Phase 5 wires the `ingestion-sports` and `ingestion-news` workers to real
+providers (football-data.org for live matches/standings, RSS feeds for news),
+normalizes their output through `@vyntro/svc-matches` / `@vyntro/svc-news`,
+and upserts into Postgres idempotently via `externalRef` uniqueness. The API
+gateway's matches/news/main-event services now read directly from Postgres
+instead of returning stubs. Phases 6–10 remain empty-but-wired skeletons,
+each marked with `Not implemented` / `TODO` at the exact integration points.

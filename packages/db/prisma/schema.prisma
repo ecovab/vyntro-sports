@@ -155,19 +155,21 @@ model Sport {
 }
 
 model Competition {
-  id         String   @id @default(uuid())
-  sportId    String
-  sport      Sport    @relation(fields: [sportId], references: [id])
-  name       String
-  slug       String
-  country    String?
-  tierWeight Int      @default(10)
-  season     String?
-  logoUrl    String?
+  id          String   @id @default(uuid())
+  sportId     String
+  sport       Sport    @relation(fields: [sportId], references: [id])
+  name        String
+  slug        String
+  country     String?
+  tierWeight  Int      @default(10)
+  season      String?
+  logoUrl     String?
+  externalRef String?
 
   matches    Match[]
   standings  Standing[]
 
+  @@unique([sportId, externalRef])
   @@map("competitions")
 }
 
@@ -185,6 +187,7 @@ model Team {
   homeMatches   Match[]  @relation("HomeTeam")
   awayMatches   Match[]  @relation("AwayTeam")
 
+  @@unique([sportId, externalRef])
   @@map("teams")
 }
 
@@ -232,6 +235,7 @@ model Match {
 
   events         MatchEvent[]
 
+  @@unique([sportId, externalRef])
   @@map("matches")
 }
 
