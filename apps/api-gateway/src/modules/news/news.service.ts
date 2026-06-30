@@ -24,7 +24,13 @@ export class NewsService {
   }
 
   async getById(id: string) {
-    return prisma.newsArticle.findUnique({ where: { id }, include: { source: true } });
+    const article = await prisma.newsArticle.findUnique({ where: { id }, include: { source: true } });
+    if (!article) return null;
+
+    const aiSummary = await prisma.aiSummary.findUnique({
+      where: { subjectType_subjectId: { subjectType: "article", subjectId: id } },
+    });
+    return { ...article, aiSummary: aiSummary?.summaryText ?? null };
   }
 
   async breaking() {

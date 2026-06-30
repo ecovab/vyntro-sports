@@ -56,9 +56,10 @@ async function upsertTeam(sportId: string, team: NormalizedTeam) {
  * Never invents scores or status — only persists exactly what the adapter returned.
  */
 export async function ingestNormalizedMatches(sport: Sport, matches: NormalizedMatch[]) {
-  if (matches.length === 0) return { ingested: 0 };
+  if (matches.length === 0) return { ingested: 0, matches: [] as Array<{ id: string; status: string }> };
 
   const sportRow = await upsertSport(sport);
+  const persisted: Array<{ id: string; status: string }> = [];
 
   for (const match of matches) {
     const [competition, homeTeam, awayTeam] = await Promise.all([
@@ -67,7 +68,7 @@ export async function ingestNormalizedMatches(sport: Sport, matches: NormalizedM
       upsertTeam(sportRow.id, match.awayTeam),
     ]);
 
-    await prisma.match.upsert({
+    const row = await prisma.match.upsert({
       where: { sportId_externalRef: { sportId: sportRow.id, externalRef: match.externalRef } },
       update: {
         competitionId: competition.id,
@@ -98,7 +99,8 @@ export async function ingestNormalizedMatches(sport: Sport, matches: NormalizedM
         rawProviderPayload: match.raw as object | undefined,
       },
     });
+    persisted.push({ id: row.id, status: row.status });
   }
 
-  return { ingested: matches.length };
+  return { ingested: matches.length, matches: persisted };
 }

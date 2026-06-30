@@ -2,6 +2,7 @@ import { Queue, Worker } from "bullmq";
 import Parser from "rss-parser";
 import { prisma } from "@vyntro/db";
 import { deduplicateArticles, ingestNewsArticles, rankByImportance, type RawArticle } from "@vyntro/svc-news";
+import { getOrGenerateArticleSummary } from "@vyntro/svc-ai-orchestrator";
 
 const connection = { url: process.env.REDIS_URL ?? "redis://localhost:6379" };
 const POLL_INTERVAL_MS = 60_000;
@@ -42,7 +43,17 @@ const worker = new Worker(
 
     const deduped = await deduplicateArticles(articles);
     const ranked = await rankByImportance(deduped, trustScoreBySource);
-    return ingestNewsArticles(ranked);
+    const result = await ingestNewsArticles(ranked);
+
+    await Promise.allSettled(
+      result.articles.map((article) =>
+        getOrGenerateArticleSummary(article.id, article.title, article.content ?? "").catch((err) =>
+          console.error(`[ingestion-news] summary generation failed for article ${article.id}`, err),
+        ),
+      ),
+    );
+
+    return { ingested: result.ingested };
   },
   { connection },
 );

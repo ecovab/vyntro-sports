@@ -6,12 +6,12 @@ import type { RawArticle } from "./index";
  * NewsArticle.url for idempotency — re-ingesting the same article is a no-op.
  */
 export async function ingestNewsArticles(articles: RawArticle[]) {
-  let ingested = 0;
+  const created: Array<{ id: string; title: string; content?: string }> = [];
   for (const article of articles) {
     const existing = await prisma.newsArticle.findUnique({ where: { url: article.sourceUrl } });
     if (existing) continue;
 
-    await prisma.newsArticle.create({
+    const row = await prisma.newsArticle.create({
       data: {
         sourceId: article.sourceId,
         sportId: article.sportId,
@@ -22,7 +22,7 @@ export async function ingestNewsArticles(articles: RawArticle[]) {
         imageUrl: article.imageUrl,
       },
     });
-    ingested += 1;
+    created.push({ id: row.id, title: article.title, content: article.content });
   }
-  return { ingested };
+  return { ingested: created.length, articles: created };
 }

@@ -24,7 +24,7 @@ export class MatchesService {
   }
 
   async getMatchById(id: string) {
-    return prisma.match.findUnique({
+    const match = await prisma.match.findUnique({
       where: { id },
       include: {
         sport: true,
@@ -34,6 +34,12 @@ export class MatchesService {
         events: { orderBy: { createdAt: "asc" } },
       },
     });
+    if (!match) return null;
+
+    const aiSummary = await prisma.aiSummary.findUnique({
+      where: { subjectType_subjectId: { subjectType: "match", subjectId: id } },
+    });
+    return { ...match, aiSummary: aiSummary?.summaryText ?? null };
   }
 
   async getStandings(competitionId: string) {

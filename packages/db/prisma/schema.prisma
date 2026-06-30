@@ -330,6 +330,7 @@ model AiSummary {
   generatedAt         DateTime @default(now())
   verifiedAgainstHash String
 
+  @@unique([subjectType, subjectId])
   @@map("ai_summaries")
 }
 
